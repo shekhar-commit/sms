@@ -1,12 +1,16 @@
 # app.py
+
 import streamlit as st
 import pickle
 import string
+import os
 import nltk
 from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
 
-# 🔧 Download required NLTK resources only if missing
+# 🔧 Download required NLTK resources if missing
+nltk.data.path.append('./nltk_data')
+
 try:
     nltk.data.find('tokenizers/punkt')
 except LookupError:
@@ -17,10 +21,11 @@ try:
 except LookupError:
     nltk.download('stopwords')
 
-# Initialize stemmer
+# Initialize stemmer and stopwords
 ps = PorterStemmer()
+stop_words = set(stopwords.words('english'))
 
-# Preprocessing function
+# 🧹 Preprocessing function
 def transform_text(text):
     text = text.lower()
     text = nltk.word_tokenize(text)
@@ -34,33 +39,30 @@ def transform_text(text):
     y.clear()
 
     for i in text:
-        if i not in stopwords.words('english') and i not in string.punctuation:
-            y.append(i)
-
-    text = y[:]
-    y.clear()
-
-    for i in text:
-        y.append(ps.stem(i))
+        if i not in stop_words:
+            y.append(ps.stem(i))
 
     return " ".join(y)
 
-# Load the model and vectorizer
+# 📦 Load the model and vectorizer using safe paths
+MODEL_PATH = os.path.join(os.path.dirname(__file__), 'model.pkl')
+VECTORIZER_PATH = os.path.join(os.path.dirname(__file__), 'vectorizer.pkl')
+
 try:
-    tfidf = pickle.load(open('vectorizer.pkl', 'rb'))
-    model = pickle.load(open('model.pkl', 'rb'))
+    tfidf = pickle.load(open(VECTORIZER_PATH, 'rb'))
+    model = pickle.load(open(MODEL_PATH, 'rb'))
 except Exception as e:
-    st.error(f"Error loading model: {e}")
+    st.error(f"Error loading model/vectorizer: {e}")
     st.stop()
 
-# Streamlit UI
+# 📱 Streamlit UI
 st.title("📩 SMS Spam Classifier")
 st.markdown("### A simple spam detector trained by Shekhar")
 
-# Text input
+# 📝 Text input
 input_sms = st.text_area("Enter the SMS message")
 
-# Predict button
+# 🔍 Predict button
 if st.button('Predict'):
     if input_sms.strip() == "":
         st.warning("Please enter a message.")
