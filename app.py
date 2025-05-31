@@ -1,11 +1,18 @@
+# app.py
 import streamlit as st
 import pickle
 import string
-from nltk.corpus import stopwords
 import nltk
+from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
 
+nltk.download('punkt')
+nltk.download('stopwords')
+
+# Initialize stemmer
 ps = PorterStemmer()
+
+# Preprocessing function
 def transform_text(text):
     text = text.lower()
     text = nltk.word_tokenize(text)
@@ -30,24 +37,34 @@ def transform_text(text):
 
     return " ".join(y)
 
-tfidf = pickle.load(open('vectorizer.pkl','rb'))
-model = pickle.load(open('model.pkl','rb'))
+# Load the model and vectorizer
+try:
+    tfidf = pickle.load(open('vectorizer.pkl', 'rb'))
+    model = pickle.load(open('model.pkl', 'rb'))
+except Exception as e:
+    st.error(f"Error loading model: {e}")
+    st.stop()
 
-st.title("Welcome to SMS Spam Classifier")
-st.markdown("### Which is trained by Shekhar-train-model")
+# Streamlit UI
+st.title("📩 SMS Spam Classifier")
+st.markdown("### A simple spam detector trained by Shekhar")
 
-input_sms = st.text_area("Enter the message")
+# Text input
+input_sms = st.text_area("Enter the SMS message")
 
+# Predict button
 if st.button('Predict'):
-
-    # 1. preprocess
-    transformed_sms = transform_text(input_sms)
-    # 2. vectorize
-    vector_input = tfidf.transform([transformed_sms])
-    # 3. predict
-    result = model.predict(vector_input)[0]
-    # 4. Display
-    if result == 1:
-        st.header("Spam")
+    if input_sms.strip() == "":
+        st.warning("Please enter a message.")
     else:
-        st.header("Not Spam")
+        # 1. Preprocess
+        transformed_sms = transform_text(input_sms)
+        # 2. Vectorize
+        vector_input = tfidf.transform([transformed_sms])
+        # 3. Predict
+        result = model.predict(vector_input)[0]
+        # 4. Display
+        if result == 1:
+            st.error("🚫 Spam")
+        else:
+            st.success("✅ Not Spam")
